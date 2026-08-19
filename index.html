@@ -231,30 +231,6 @@
 
   /* ---------- Roster ---------- */
   .roster-list{ display:flex; flex-direction:column; gap: 10px; }
-  .member-row{
-    display:flex;
-    align-items:center;
-    gap: 14px;
-    padding: 12px 14px;
-    border: 1.5px solid var(--line);
-    border-radius: 8px;
-    background: #FCFBF8;
-    transition: background .3s ease, border-color .3s ease, opacity .3s ease;
-    animation: popIn .3s ease;
-  }
-  .member-row.not-coming{ opacity: .55; background: #F4F0EC; }
-  .member-row.confirmed{ border-color: var(--teal); background: #F1F8F5; }
-  .member-avatar{
-    width: 34px; height:34px; min-width:34px;
-    border-radius:50%;
-    background: linear-gradient(135deg, var(--ink), var(--ink-soft));
-    color:#fff;
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Space Grotesk', sans-serif;
-    font-weight:600; font-size: 14px;
-  }
-  .member-name{ font-weight:600; font-size: 14.5px; flex: 1; min-width: 100px; }
-  .member-row.not-coming .member-name{ text-decoration: line-through; text-decoration-color: var(--coral); }
   select.stop-select{
     font-family:'Inter', sans-serif;
     font-size: 13.5px;
@@ -268,24 +244,6 @@
     transition: border-color .2s ease;
   }
   select.stop-select:focus{ outline:none; border-color: var(--amber); }
-  .status-badge{
-    font-family:'IBM Plex Mono', monospace;
-    font-size: 11px;
-    padding: 4px 10px;
-    border-radius: 20px;
-    white-space: nowrap;
-    min-width: 96px;
-    text-align:center;
-  }
-  .status-badge.pending{ background:#EDEBE4; color: var(--slate); }
-  .status-badge.confirmed{ background: rgba(46,125,107,0.12); color: var(--teal); }
-  .status-badge.not-coming{ background: rgba(217,83,79,0.12); color: var(--coral); }
-  .member-remove{
-    background:none; border:none; color: var(--slate);
-    font-size: 16px; cursor:pointer; padding: 4px 6px; border-radius:6px;
-    transition: color .2s ease, background .2s ease;
-  }
-  .member-remove:hover{ color: var(--coral); background: rgba(217,83,79,0.08); }
 
   /* ---------- Chart panel ---------- */
   .chart-wrap{
@@ -319,17 +277,35 @@
   .chart-info-dot{ width:12px; height:12px; border-radius:4px; flex-shrink:0; }
   .chart-info-title{ font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:15px; }
   .chart-info-count{ font-family:'IBM Plex Mono', monospace; color: var(--slate); font-size:12.5px; margin-left:auto; }
+  
+  /* ---------- Member Chips (includes Late styling) ---------- */
   .chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
   .name-chip{
     display:inline-flex; align-items:center; gap:6px;
     background: var(--cloud); border:1px solid var(--line);
     padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight:500;
     animation: popIn .25s ease;
+    transition: background .2s ease, border-color .2s ease, color .2s ease;
+  }
+  .name-chip.late {
+    background: rgba(217,83,79,0.08);
+    border-color: rgba(217,83,79,0.3);
+    color: var(--coral);
   }
   .name-chip .remove-x{
-    cursor:pointer; color: var(--slate); font-size: 12px; line-height:1;
+    cursor:pointer; color: var(--slate); font-size: 12px; line-height:1; padding-left: 2px;
   }
   .name-chip .remove-x:hover{ color: var(--coral); }
+  .name-chip.late .remove-x { color: var(--coral); }
+  .time-stamp {
+    font-size: 11px;
+    opacity: 0.6;
+    margin-left: 2px;
+    font-weight: 500;
+  }
+  .name-chip.late .time-stamp {
+    opacity: 0.8;
+  }
 
   /* ---------- Grouped roster ---------- */
   .point-group{
@@ -407,11 +383,23 @@
     .bus-icon{ animation: none; left: 2%; }
   }
 
+  /* Upgraded Mobile view layout */
   @media (max-width: 560px){
-    .destination-board{ flex-direction:column; align-items:flex-start; text-align:left; }
-    .board-right{ text-align:left; }
-    .member-row{ flex-wrap:wrap; }
-    select.stop-select{ min-width: 140px; }
+    body { padding: 16px 12px 40px; }
+    .destination-board { flex-direction:column; align-items:flex-start; text-align:left; gap: 12px; padding: 20px; }
+    .board-left h1 { font-size: 24px; }
+    .board-right { text-align:left; }
+    .clock { font-size: 22px; }
+    .panel { padding: 20px 16px; }
+    
+    form.inline-form { flex-direction: column; align-items: stretch; }
+    form.inline-form input[type=text], 
+    select.stop-select, 
+    form.inline-form button { 
+      width: 100%; 
+      min-width: 100%; 
+    }
+    .chart-wrap { gap: 20px; }
   }
 </style>
 </head>
@@ -512,8 +500,7 @@ const firebaseConfig = {
   projectId: "bus-pickup-90ef3",
   storageBucket: "bus-pickup-90ef3.firebasestorage.app",
   messagingSenderId: "377149329082",
-  appId: "1:377149329082:web:b057fb1cd8611a5d963c83",
-  measurementId: "G-YCGF23F8TJ"
+  appId: "1:377149329082:web:b057fb1cd8611a5d963c83"
 };
 
 const isConfigured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('PASTE_');
@@ -524,14 +511,13 @@ if(isConfigured){
 }else{
   const banner = document.createElement('div');
   banner.style.cssText = 'background:#D9534F;color:#fff;padding:12px 20px;font-family:Inter,sans-serif;font-size:13.5px;text-align:center;';
-  banner.innerHTML = '⚠ Firebase isn\'t set up yet — running in single-device mode. Data won\'t sync across phones until you paste your Firebase config into the HTML file.';
+  banner.innerHTML = '⚠ Firebase isn\'t set up yet — running in single-device mode.';
   document.body.prepend(banner);
 }
 
 (function(){
   const CHART_PALETTE = ['#2E7D6B','#E8A33D','#3B5DA3','#8E6BB0','#C97F5E','#4C9F8F','#B08B2E','#5B7DB1'];
   const NOT_COMING_COLOR = '#D9534F';
-  const PENDING_COLOR = '#D8D4C8';
 
   let stops = [];
   let members = [];
@@ -579,6 +565,11 @@ if(isConfigured){
   function objToArray(val){
     if(!val) return [];
     return Object.keys(val).map(id => ({ id, ...val[id] })).sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
+  }
+
+  // Data helpers to handle the new time tracking + backwards compatibility
+  function getStopId(val){
+    return (typeof val === 'object' && val !== null) ? val.stopId : val;
   }
 
   const defaultStops = () => ([
@@ -687,7 +678,7 @@ if(isConfigured){
     }
     const editing = $('stopForm').style.display !== 'none';
     stops.forEach(stop => {
-      const count = Object.values(statusMap).filter(v => v === stop.id).length;
+      const count = Object.values(statusMap).filter(v => getStopId(v) === stop.id).length;
       const chip = document.createElement('div');
       chip.className = 'stop-chip';
       chip.innerHTML = `
@@ -732,7 +723,7 @@ if(isConfigured){
 
   async function removeStop(id){
     const stop = stops.find(s => s.id === id);
-    const idsToClear = Object.keys(statusMap).filter(mid => statusMap[mid] === id);
+    const idsToClear = Object.keys(statusMap).filter(mid => getStopId(statusMap[mid]) === id);
 
     if(isConfigured){
       await remove(ref(db, 'stops/' + id));
@@ -822,7 +813,7 @@ if(isConfigured){
     }
 
     groupDefs.forEach(def => {
-      const ids = Object.keys(statusMap).filter(id => statusMap[id] === def.key && members.some(m => m.id === id));
+      const ids = Object.keys(statusMap).filter(id => getStopId(statusMap[id]) === def.key && members.some(m => m.id === id));
       if(ids.length === 0) return;
 
       const isOpen = !!openGroups[def.key];
@@ -836,7 +827,23 @@ if(isConfigured){
 
       const chips = visibleIds.map(id => {
         const m = members.find(x => x.id === id);
-        return `<span class="name-chip">${escapeHtml(m.name)}<span class="remove-x" data-id="${id}" title="Remove check-in">✕</span></span>`;
+        const statusVal = statusMap[id];
+        const timeMs = (typeof statusVal === 'object' && statusVal.time) ? statusVal.time : Date.now();
+        
+        const checkInDate = new Date(timeMs);
+        const hours = checkInDate.getHours();
+        const minutes = checkInDate.getMinutes();
+        
+        // Late calculation logic: Anything past 8:30 AM is highlighted in red
+        const isLate = hours > 8 || (hours === 8 && minutes >= 30); 
+        const lateClass = isLate ? 'late' : '';
+        const timeStr = checkInDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        return `
+          <span class="name-chip ${lateClass}">
+            ${escapeHtml(m.name)} <span class="time-stamp">(${timeStr})</span>
+            <span class="remove-x" data-id="${id}" title="Remove check-in">✕</span>
+          </span>`;
       }).join('');
 
       group.innerHTML = `
@@ -887,10 +894,13 @@ if(isConfigured){
     const m = members.find(x => x.id === memberId);
     if(!m){ showToast('That member no longer exists — pick again.'); return; }
 
+    // Create the check-in object including the exact time
+    const checkInData = { stopId: value, time: Date.now() };
+
     if(isConfigured){
-      await set(ref(db, 'status/' + todayKey + '/' + m.id), value);
+      await set(ref(db, 'status/' + todayKey + '/' + m.id), checkInData);
     }else{
-      statusMap[m.id] = value;
+      statusMap[m.id] = checkInData;
       localSave('status:' + todayKey, statusMap);
     }
 
@@ -941,10 +951,10 @@ if(isConfigured){
     const segments = [];
 
     stops.forEach((s, i) => {
-      const count = Object.values(statusMap).filter(v => v === s.id).length;
+      const count = Object.values(statusMap).filter(v => getStopId(v) === s.id).length;
       if(count > 0) segments.push({ key: s.id, label: s.name, count, color: CHART_PALETTE[i % CHART_PALETTE.length] });
     });
-    const notComing = Object.values(statusMap).filter(v => v === 'NOT_COMING').length;
+    const notComing = Object.values(statusMap).filter(v => getStopId(v) === 'NOT_COMING').length;
     if(notComing > 0) segments.push({ key: 'NOT_COMING', label: 'Not coming', count: notComing, color: NOT_COMING_COLOR });
 
     if(activeSlice && !segments.some(s => s.key === activeSlice)){
@@ -994,7 +1004,7 @@ if(isConfigured){
     if(activeSlice){
       renderChartInfo(key, label, color);
       openGroups[key] = true;
-      const count = Object.values(statusMap).filter(v => v === key).length;
+      const count = Object.values(statusMap).filter(v => getStopId(v) === key).length;
       revealCounts[key] = Math.max(revealCounts[key] || 0, Math.min(GROUP_BATCH, count));
       renderRoster();
       const groupEl = document.querySelector(`.point-group[data-key="${key}"]`);
@@ -1005,7 +1015,7 @@ if(isConfigured){
   }
 
   function renderChartInfo(key, label, color){
-    const ids = Object.keys(statusMap).filter(id => statusMap[id] === key && members.some(m => m.id === id));
+    const ids = Object.keys(statusMap).filter(id => getStopId(statusMap[id]) === key && members.some(m => m.id === id));
     const names = ids.map(id => members.find(m => m.id === id).name);
     const info = $('chartInfo');
     const shown = names.slice(0, 14);
