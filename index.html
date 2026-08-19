@@ -86,6 +86,35 @@
     margin-top:4px;
   }
 
+  .btn-header {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.2s;
+  }
+  .btn-header:hover { background: rgba(255,255,255,0.2); }
+
+  /* ---------- Alert Banner ---------- */
+  .alert-banner {
+    padding: 14px 20px;
+    border-radius: 8px;
+    margin-top: 22px;
+    font-weight: 500;
+    font-size: 14.5px;
+    box-shadow: var(--shadow);
+    animation: popIn 0.4s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .alert-banner.warning { background: var(--coral); color: white; }
+  .alert-banner.success { background: var(--teal); color: white; }
+
   main{ display:grid; grid-template-columns: 1fr; gap: 22px; margin-top: 22px; width:100%; }
 
   .panel{
@@ -98,10 +127,6 @@
     animation: riseIn .6s ease forwards;
     width: 100%;
   }
-  .panel:nth-of-type(1){ animation-delay: .08s; }
-  .panel:nth-of-type(2){ animation-delay: .16s; }
-  .panel:nth-of-type(3){ animation-delay: .24s; }
-
   .panel h2{
     font-family:'Space Grotesk', sans-serif;
     font-size: 18px;
@@ -118,7 +143,7 @@
   .btn-gear{ font-size: 12.5px; padding: 8px 14px; white-space:nowrap; }
 
   form.inline-form{ display:flex; gap:10px; margin-bottom: 18px; flex-wrap:wrap; width: 100%; }
-  form.inline-form input[type=text]{
+  form.inline-form input[type=text], form.inline-form input[type=time]{
     flex:1;
     min-width: 180px;
     padding: 11px 14px;
@@ -129,7 +154,7 @@
     transition: border-color .2s ease, box-shadow .2s ease;
     background: #FCFBF8;
   }
-  form.inline-form input[type=text]:focus{
+  form.inline-form input:focus{
     outline:none;
     border-color: var(--amber);
     box-shadow: 0 0 0 3px rgba(232,163,61,0.18);
@@ -150,285 +175,97 @@
   .btn-ghost{ background: transparent; color: var(--slate); border:1.5px solid var(--line); }
   .btn-ghost:hover{ border-color: var(--coral); color: var(--coral); }
 
-  /* ---------- Route line (signature element) ---------- */
-  .route-line-wrap{
-    position:relative;
-    padding: 34px 6px 10px;
-    overflow-x: auto;
-    width: 100%;
-  }
-  .route-track{
-    position:relative;
-    height: 4px;
-    background: linear-gradient(90deg, var(--amber), var(--teal));
-    border-radius: 4px;
-    min-width: 100%;
-  }
-  .bus-icon{
-    position:absolute;
-    top: -13px;
-    font-size: 20px;
-    animation: travel 7s linear infinite;
-    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25));
-  }
-  @keyframes travel{
-    0%{ left: 0%; transform: scaleX(1); }
-    48%{ transform: scaleX(1); }
-    50%{ left: calc(100% - 22px); transform: scaleX(-1); }
-    98%{ transform: scaleX(-1); }
-    100%{ left: 0%; transform: scaleX(1); }
-  }
-  .stops-row{
-    display:flex;
-    gap: 22px;
-    padding-top: 26px;
-    min-width: max-content;
-  }
-  .stop-chip{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:8px;
-    animation: popIn .35s ease;
-  }
-  .stop-dot{
-    width: 16px; height:16px; border-radius:50%;
-    background: var(--paper);
-    border: 3px solid var(--teal);
-    position:relative;
-    transition: transform .25s ease, border-color .25s ease;
-  }
+  /* ---------- Route line ---------- */
+  .route-line-wrap{ position:relative; padding: 34px 6px 10px; overflow-x: auto; width: 100%; }
+  .route-track{ position:relative; height: 4px; background: linear-gradient(90deg, var(--amber), var(--teal)); border-radius: 4px; min-width: 100%; }
+  .bus-icon{ position:absolute; top: -13px; font-size: 20px; animation: travel 7s linear infinite; }
+  @keyframes travel{ 0%{ left: 0%; transform: scaleX(1); } 48%{ transform: scaleX(1); } 50%{ left: calc(100% - 22px); transform: scaleX(-1); } 98%{ transform: scaleX(-1); } 100%{ left: 0%; transform: scaleX(1); } }
+  .stops-row{ display:flex; gap: 22px; padding-top: 26px; min-width: max-content; }
+  .stop-chip{ display:flex; flex-direction:column; align-items:center; gap:8px; animation: popIn .35s ease; }
+  .stop-dot{ width: 16px; height:16px; border-radius:50%; background: var(--paper); border: 3px solid var(--teal); position:relative; transition: transform .25s ease, border-color .25s ease; }
   .stop-chip:hover .stop-dot{ transform: scale(1.25); border-color: var(--amber); }
-  .stop-name{
-    font-size: 13px; font-weight:600; color: var(--ink);
-    white-space:nowrap;
-  }
-  .stop-count{
-    font-family:'IBM Plex Mono', monospace;
-    font-size: 12px;
-    background: var(--cloud);
-    border:1px solid var(--line);
-    padding: 2px 9px;
-    border-radius: 20px;
-    color: var(--ink-soft);
-    transition: transform .2s ease, background .2s ease;
-  }
-  .stop-count.pulse{ animation: pulse .5s ease; }
-  .stop-remove{
-    font-size: 11px;
-    color: var(--slate);
-    background:none;
-    border:none;
-    cursor:pointer;
-    text-decoration: underline;
-    padding: 0;
-  }
-  .stop-remove:hover{ color: var(--coral); }
-  .empty-note{
-    color: var(--slate);
-    font-size: 13.5px;
-    font-style: italic;
-    padding: 6px 0 2px;
-  }
+  .stop-name{ font-size: 13px; font-weight:600; color: var(--ink); white-space:nowrap; }
+  .stop-count{ font-family:'IBM Plex Mono', monospace; font-size: 12px; background: var(--cloud); border:1px solid var(--line); padding: 2px 9px; border-radius: 20px; color: var(--ink-soft); }
+  .stop-remove{ font-size: 11px; color: var(--slate); background:none; border:none; cursor:pointer; text-decoration: underline; padding: 0; }
+  .empty-note{ color: var(--slate); font-size: 13.5px; font-style: italic; padding: 6px 0 2px; }
 
-  /* ---------- Roster ---------- */
+  /* ---------- Roster & Charts ---------- */
   .roster-list{ display:flex; flex-direction:column; gap: 10px; width: 100%; }
-  select.stop-select{
-    font-family:'Inter', sans-serif;
-    font-size: 13.5px;
-    padding: 9px 12px;
-    border-radius: 7px;
-    border: 1.5px solid var(--line);
-    background: #fff;
-    color: var(--ink);
-    min-width: 190px;
-    cursor:pointer;
-    transition: border-color .2s ease;
-  }
+  select.stop-select{ font-family:'Inter', sans-serif; font-size: 13.5px; padding: 9px 12px; border-radius: 7px; border: 1.5px solid var(--line); background: #fff; color: var(--ink); min-width: 190px; cursor:pointer; }
   select.stop-select:focus{ outline:none; border-color: var(--amber); }
 
-  /* ---------- Chart panel ---------- */
-  .chart-wrap{
-    display:flex; align-items:center; gap: 34px; flex-wrap:wrap;
-    justify-content:center;
-    width: 100%;
-  }
+  .chart-wrap{ display:flex; align-items:center; gap: 34px; flex-wrap:wrap; justify-content:center; width: 100%; }
   #pieChart{ width: 220px; height:220px; max-width: 100%; }
-  #pieChart circle{ transition: stroke-dasharray .7s cubic-bezier(.4,0,.2,1), stroke-dashoffset .7s cubic-bezier(.4,0,.2,1); }
-  .chart-center-label{
-    font-family:'Space Grotesk', sans-serif;
-    font-size: 15px;
-    fill: var(--ink);
-  }
+  #pieChart circle{ transition: stroke-dasharray .7s cubic-bezier(.4,0,.2,1), stroke-dashoffset .7s cubic-bezier(.4,0,.2,1); cursor: pointer; }
+  .chart-center-label{ font-family:'Space Grotesk', sans-serif; font-size: 15px; fill: var(--ink); }
   .legend{ display:flex; flex-direction:column; gap: 10px; min-width: 200px; }
-  .legend-item{ display:flex; align-items:center; gap:10px; font-size:13.5px; }
-  .legend-dot{ width:11px; height:11px; border-radius:3px; flex-shrink:0; }
-  .legend-count{ margin-left:auto; font-family:'IBM Plex Mono', monospace; color: var(--slate); font-size:12.5px; }
-  .legend-item{ cursor: pointer; padding: 4px 6px; border-radius:6px; transition: background .2s ease; }
+  .legend-item{ display:flex; align-items:center; gap:10px; font-size:13.5px; cursor: pointer; padding: 4px 6px; border-radius:6px; }
   .legend-item:hover{ background: var(--cloud); }
   .legend-item.active{ background: rgba(232,163,61,0.15); }
+  .legend-dot{ width:11px; height:11px; border-radius:3px; flex-shrink:0; }
+  .legend-count{ margin-left:auto; font-family:'IBM Plex Mono', monospace; color: var(--slate); font-size:12.5px; }
 
-  #pieChart circle[data-key]{ cursor: pointer; }
-
-  .chart-info{
-    margin-top: 20px;
-    border-top: 1px dashed var(--line);
-    padding-top: 18px;
-    width: 100%;
-  }
+  .chart-info{ margin-top: 20px; border-top: 1px dashed var(--line); padding-top: 18px; width: 100%; }
   .chart-info-hint{ color: var(--slate); font-size: 13px; font-style: italic; }
   .chart-info-head{ display:flex; align-items:center; gap:10px; margin-bottom: 12px; }
   .chart-info-dot{ width:12px; height:12px; border-radius:4px; flex-shrink:0; }
   .chart-info-title{ font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:15px; }
   .chart-info-count{ font-family:'IBM Plex Mono', monospace; color: var(--slate); font-size:12.5px; margin-left:auto; }
   
-  /* ---------- Member Chips (includes Late styling) ---------- */
+  /* ---------- Member Chips ---------- */
   .chip-row{ display:flex; flex-wrap:wrap; gap:8px; width: 100%; }
-  .name-chip{
-    display:inline-flex; align-items:center; gap:6px;
-    background: var(--cloud); border:1px solid var(--line);
-    padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight:500;
-    animation: popIn .25s ease;
-    transition: background .2s ease, border-color .2s ease, color .2s ease;
-  }
-  .name-chip.late {
-    background: rgba(217,83,79,0.08);
-    border-color: rgba(217,83,79,0.3);
-    color: var(--coral);
-  }
-  .name-chip .remove-x{
-    cursor:pointer; color: var(--slate); font-size: 12px; line-height:1; padding-left: 2px;
-  }
+  .name-chip{ display:inline-flex; align-items:center; gap:6px; background: var(--cloud); border:1px solid var(--line); padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight:500; animation: popIn .25s ease; transition: background .2s ease, border-color .2s ease, color .2s ease; }
+  .name-chip.late { background: rgba(217,83,79,0.08); border-color: rgba(217,83,79,0.3); color: var(--coral); }
+  .name-chip.missing { background: #fff; border-style: dashed; border-color: var(--slate); color: var(--slate); opacity: 0.8; }
+  .name-chip .remove-x{ cursor:pointer; color: var(--slate); font-size: 12px; line-height:1; padding-left: 2px; }
   .name-chip .remove-x:hover{ color: var(--coral); }
-  .name-chip.late .remove-x { color: var(--coral); }
-  .time-stamp {
-    font-size: 11px;
-    opacity: 0.6;
-    margin-left: 2px;
-    font-weight: 500;
-  }
-  .name-chip.late .time-stamp {
-    opacity: 0.8;
-  }
+  .time-stamp { font-size: 11px; opacity: 0.6; margin-left: 2px; font-weight: 500; }
+  .name-chip.late .time-stamp { opacity: 0.8; }
 
   /* ---------- Grouped roster ---------- */
-  .point-group{
-    border: 1.5px solid var(--line);
-    border-radius: 8px;
-    margin-bottom: 10px;
-    overflow: hidden;
-    transition: border-color .3s ease, box-shadow .3s ease;
-    animation: popIn .3s ease;
-    width: 100%;
-  }
+  .point-group{ border: 1.5px solid var(--line); border-radius: 8px; margin-bottom: 10px; overflow: hidden; animation: popIn .3s ease; width: 100%; }
   .point-group.highlight{ border-color: var(--amber); box-shadow: 0 0 0 3px rgba(232,163,61,0.16); }
-  .group-header{
-    display:flex; align-items:center; gap:12px;
-    padding: 13px 16px;
-    cursor:pointer;
-    background: #FCFBF8;
-    user-select:none;
-  }
-  .group-header:hover{ background: var(--cloud); }
+  .group-header{ display:flex; align-items:center; gap:12px; padding: 13px 16px; cursor:pointer; background: #FCFBF8; user-select:none; }
   .group-dot{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
   .group-title{ font-weight:600; font-size:14.5px; flex:1; }
-  .group-count{
-    font-family:'IBM Plex Mono', monospace; font-size:12px;
-    background: var(--cloud); border:1px solid var(--line);
-    padding: 2px 10px; border-radius: 20px; color: var(--ink-soft);
-  }
+  .group-count{ font-family:'IBM Plex Mono', monospace; font-size:12px; background: var(--cloud); border:1px solid var(--line); padding: 2px 10px; border-radius: 20px; color: var(--ink-soft); }
   .group-chevron{ color: var(--slate); font-size:12px; transition: transform .25s ease; }
   .point-group.open .group-chevron{ transform: rotate(180deg); }
-  .group-body{
-    padding: 0 16px 16px;
-    display:none;
-  }
+  .group-body{ padding: 0 16px 16px; display:none; }
   .point-group.open .group-body{ display:block; animation: riseIn .3s ease; }
-  .show-more-btn{
-    margin-top: 10px;
-    background: none; border: 1.5px dashed var(--line); color: var(--ink-soft);
-    padding: 8px 14px; border-radius: 20px; font-size: 12.5px;
-  }
-  .show-more-btn:hover{ border-color: var(--amber); color: var(--ink); }
+  .show-more-btn{ margin-top: 10px; background: none; border: 1.5px dashed var(--line); color: var(--ink-soft); padding: 8px 14px; border-radius: 20px; font-size: 12.5px; }
 
-  /* ---------- Fixed member editor ---------- */
+  /* ---------- Edit Chips ---------- */
   .member-chip-wrap{ display:flex; flex-wrap:wrap; gap:10px; width: 100%; }
-  .member-edit-chip{
-    display:inline-flex; align-items:center; gap:8px;
-    background: #FCFBF8; border: 1.5px solid var(--line);
-    padding: 7px 8px 7px 14px; border-radius: 20px; font-size: 13.5px; font-weight:500;
-    animation: popIn .3s ease;
-  }
+  .member-edit-chip{ display:inline-flex; align-items:center; gap:8px; background: #FCFBF8; border: 1.5px solid var(--line); padding: 7px 8px 7px 14px; border-radius: 20px; font-size: 13.5px; font-weight:500; }
   .member-edit-chip .stop-remove{ font-size:11px; }
 
-  /* ---------- Toasts ---------- */
-  .toast-container{
-    position: fixed; bottom: 22px; right: 22px;
-    display:flex; flex-direction:column; gap:10px; z-index: 999;
-  }
-  .toast{
-    background: var(--ink);
-    color:#fff;
-    padding: 12px 18px;
-    border-radius: 8px;
-    font-size: 13.5px;
-    box-shadow: 0 8px 20px -6px rgba(0,0,0,0.4);
-    animation: slideIn .35s ease, fadeOut .4s ease 2.6s forwards;
-  }
+  .toast-container{ position: fixed; bottom: 22px; right: 22px; display:flex; flex-direction:column; gap:10px; z-index: 999; }
+  .toast{ background: var(--ink); color:#fff; padding: 12px 18px; border-radius: 8px; font-size: 13.5px; box-shadow: 0 8px 20px -6px rgba(0,0,0,0.4); animation: slideIn .35s ease, fadeOut .4s ease 2.6s forwards; }
 
-  /* ---------- Animations ---------- */
   @keyframes riseIn{ from{ opacity:0; transform: translateY(14px);} to{ opacity:1; transform:translateY(0);} }
   @keyframes popIn{ from{ opacity:0; transform: scale(.9);} to{ opacity:1; transform:scale(1);} }
-  @keyframes pulse{ 0%{transform:scale(1);} 40%{transform:scale(1.18); background:var(--amber-soft);} 100%{transform:scale(1);} }
   @keyframes slideIn{ from{ opacity:0; transform: translateX(30px);} to{opacity:1; transform:translateX(0);} }
   @keyframes fadeOut{ to{ opacity:0; transform: translateX(30px); } }
-
-  @media (prefers-reduced-motion: reduce){
-    *{ animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-    .bus-icon{ animation: none; left: 2%; }
-  }
 
   /* ========================================================
      STRICT MOBILE VIEWPORT SETTINGS 
      ======================================================== */
   @media (max-width: 560px){
     body { padding: 12px 8px 40px; }
-    .destination-board { 
-      flex-direction:column; 
-      align-items:flex-start; 
-      text-align:left; 
-      gap: 12px; 
-      padding: 20px 16px; 
-    }
+    .destination-board { flex-direction:column; align-items:flex-start; text-align:left; gap: 12px; padding: 20px 16px; }
     .board-left h1 { font-size: 24px; word-break: break-word; }
-    .board-right { text-align:left; }
-    .clock { font-size: 22px; }
-    
+    .board-right { text-align:left; width: 100%; display: flex; justify-content: space-between; align-items: center;}
+    .clock { font-size: 20px; }
     .panel { padding: 20px 14px; }
-    
     form.inline-form { flex-direction: column; align-items: stretch; gap: 8px; }
-    form.inline-form input[type=text], 
-    select.stop-select, 
-    form.inline-form button { 
-      width: 100%; 
-      min-width: 100%; 
-      box-sizing: border-box;
-    }
-    
+    form.inline-form input[type=text], form.inline-form input[type=time], select.stop-select, form.inline-form button { width: 100%; min-width: 100%; box-sizing: border-box; }
     .route-line-wrap { overflow-x: hidden; padding-bottom: 0; }
-    .stops-row { 
-      flex-wrap: wrap; 
-      min-width: 100%; 
-      justify-content: center; 
-      gap: 16px 12px; 
-      padding-top: 24px; 
-    }
+    .stops-row { flex-wrap: wrap; min-width: 100%; justify-content: center; gap: 16px 12px; padding-top: 24px; }
     .stop-chip { width: 45%; text-align: center; }
     .stop-name { white-space: normal; text-align: center; line-height: 1.3; }
-
     .chart-wrap { gap: 20px; flex-direction: column; }
     .legend { min-width: 100%; width: 100%; }
-    
     .group-header { flex-wrap: nowrap; padding: 12px; }
     .group-title { font-size: 13.5px; }
   }
@@ -445,45 +282,38 @@
     <div class="board-right">
       <div class="clock" id="clock">--:--:--</div>
       <div class="date" id="dateDisplay">Loading date…</div>
+      <button class="btn-header" id="toggleSettings">⚙️ Settings</button>
     </div>
   </header>
 
+  <!-- Alert Banner injected via JS -->
+  <div id="alertBanner" class="alert-banner warning" style="display:none;"></div>
+
   <main>
-    <section class="panel">
+    <!-- Settings Panel (Hidden by default) -->
+    <section class="panel" id="settingsPanel" style="display:none;">
       <div class="panel-head">
         <div>
-          <h2>Stops on the line</h2>
-          <p class="sub">The fixed pickup points for this route.</p>
+          <h2>Admin Settings</h2>
+          <p class="sub">Set the time when people should be flagged as late.</p>
         </div>
-        <button type="button" class="btn-ghost btn-gear" id="toggleStopEditor" title="Edit stops">⚙ Edit stops</button>
       </div>
-      <form class="inline-form" id="stopForm" style="display:none;">
-        <input type="text" id="stopInput" placeholder="e.g. Central Park Gate" maxlength="40" />
-        <button type="submit" class="btn-primary">Add stop</button>
+      <form class="inline-form" id="settingsForm">
+        <input type="time" id="lateTimeInput" required />
+        <button type="submit" class="btn-primary">Save Deadline</button>
       </form>
-      <!-- Hidden by default, toggled with the Edit button -->
-      <div class="route-line-wrap" id="routeWrap" style="display:none;">
-        <div class="route-track" id="routeTrack">
-          <span class="bus-icon">🚌</span>
-        </div>
-        <div class="stops-row" id="stopsRow"></div>
-      </div>
     </section>
 
-    <section class="panel">
+    <!-- Still Waiting Panel (Auto-hides if empty) -->
+    <section class="panel" id="missingPanel" style="display:none;">
       <div class="panel-head">
         <div>
-          <h2>Members</h2>
-          <p class="sub">The fixed roster for this route.</p>
+          <h2>Still Waiting...</h2>
+          <p class="sub">Members who haven't checked in yet today.</p>
         </div>
-        <button type="button" class="btn-ghost btn-gear" id="toggleMemberEditor" title="Edit members">⚙ Edit members</button>
+        <span class="stop-count" id="missingCountBadge">0 missing</span>
       </div>
-      <form class="inline-form" id="memberForm" style="display:none;">
-        <input type="text" id="memberInput" placeholder="e.g. Priya Sharma" maxlength="40" />
-        <button type="submit" class="btn-primary">Add member</button>
-      </form>
-      <!-- Hidden by default, toggled with the Edit button -->
-      <div class="member-chip-wrap" id="memberEditList" style="display:none;"></div>
+      <div class="chip-row" id="missingList"></div>
     </section>
 
     <section class="panel">
@@ -517,8 +347,45 @@
         <span class="chart-info-hint">Tap a slice above to see who's riding it.</span>
       </div>
     </section>
-  </main>
 
+    <!-- Stops Editor Panel -->
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Stops on the line</h2>
+          <p class="sub">The fixed pickup points for this route.</p>
+        </div>
+        <button type="button" class="btn-ghost btn-gear" id="toggleStopEditor" title="Edit stops">⚙ Edit stops</button>
+      </div>
+      <form class="inline-form" id="stopForm" style="display:none;">
+        <input type="text" id="stopInput" placeholder="e.g. Central Park Gate" maxlength="40" />
+        <button type="submit" class="btn-primary">Add stop</button>
+      </form>
+      <div class="route-line-wrap" id="routeWrap" style="display:none;">
+        <div class="route-track" id="routeTrack">
+          <span class="bus-icon">🚌</span>
+        </div>
+        <div class="stops-row" id="stopsRow"></div>
+      </div>
+    </section>
+
+    <!-- Member Editor Panel -->
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Members</h2>
+          <p class="sub">The fixed roster for this route.</p>
+        </div>
+        <button type="button" class="btn-ghost btn-gear" id="toggleMemberEditor" title="Edit members">⚙ Edit members</button>
+      </div>
+      <form class="inline-form" id="memberForm" style="display:none;">
+        <input type="text" id="memberInput" placeholder="e.g. Priya Sharma" maxlength="40" />
+        <button type="submit" class="btn-primary">Add member</button>
+      </form>
+      <div class="member-chip-wrap" id="memberEditList" style="display:none;"></div>
+    </section>
+
+  </main>
 </div>
 <div class="toast-container" id="toastContainer"></div>
 
@@ -561,6 +428,9 @@ if(isConfigured){
   let activeSlice = null;
   const GROUP_BATCH = 6;
   
+  // New Admin state
+  let lateThreshold = '08:30'; 
+  
   let statusUnsub = null;
   let seededStops = false;
   let seededMembers = false; 
@@ -600,68 +470,74 @@ if(isConfigured){
     return Object.keys(val).map(id => ({ id, ...val[id] })).sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
   }
 
-  // Data helpers to handle the new time tracking + backwards compatibility
   function getStopId(val){
     return (typeof val === 'object' && val !== null) ? val.stopId : val;
   }
 
   const defaultStops = () => ([
     { id: uid(), name: 'Gate A', createdAt: Date.now() },
-    { id: uid(), name: 'Gate B', createdAt: Date.now() },
-    { id: uid(), name: 'Market Square', createdAt: Date.now() },
-    { id: uid(), name: 'Central Station', createdAt: Date.now() }
+    { id: uid(), name: 'Gate B', createdAt: Date.now() }
   ]);
 
   const defaultMembers = () => ([
     { id: uid(), name: 'Alex Johnson', createdAt: Date.now() },
-    { id: uid(), name: 'Priya Sharma', createdAt: Date.now() },
-    { id: uid(), name: 'Sam Smith', createdAt: Date.now() },
-    { id: uid(), name: 'Aisha Patel', createdAt: Date.now() }
+    { id: uid(), name: 'Priya Sharma', createdAt: Date.now() }
   ]);
 
   async function init(){
     const now = new Date();
     todayKey = dateKey(now);
-    updateClockAndDate();
-    setInterval(updateClockAndDate, 1000);
-
+    
     if(!isConfigured){
       stops = localLoad('stops', null) || defaultStops();
       localSave('stops', stops);
       members = localLoad('members', null) || defaultMembers();
       localSave('members', members);
       statusMap = localLoad('status:' + todayKey, {});
+      lateThreshold = localLoad('lateThreshold', '08:30');
+      $('lateTimeInput').value = lateThreshold;
       render();
-      return;
+    } else {
+      // Sync Admin Settings
+      onValue(ref(db, 'settings/lateThreshold'), snap => {
+        if(snap.exists()) {
+          lateThreshold = snap.val();
+          $('lateTimeInput').value = lateThreshold;
+          renderRoster(); // Re-render to update late colors if time changed
+        }
+      });
+
+      onValue(ref(db, 'stops'), snap => {
+        const val = snap.val();
+        stops = objToArray(val);
+        if(stops.length === 0 && !seededStops){
+          seededStops = true;
+          const seeded = defaultStops();
+          const obj = {};
+          seeded.forEach(s => obj[s.id] = { name: s.name, createdAt: s.createdAt });
+          set(ref(db, 'stops'), obj);
+        }
+        render();
+      });
+
+      onValue(ref(db, 'members'), snap => {
+        const val = snap.val();
+        members = objToArray(val);
+        if(members.length === 0 && !seededMembers){
+          seededMembers = true;
+          const seeded = defaultMembers();
+          const obj = {};
+          seeded.forEach(m => obj[m.id] = { name: m.name, createdAt: m.createdAt });
+          set(ref(db, 'members'), obj);
+        }
+        render();
+      });
+
+      subscribeToStatus(todayKey);
     }
-
-    onValue(ref(db, 'stops'), snap => {
-      const val = snap.val();
-      stops = objToArray(val);
-      if(stops.length === 0 && !seededStops){
-        seededStops = true;
-        const seeded = defaultStops();
-        const obj = {};
-        seeded.forEach(s => obj[s.id] = { name: s.name, createdAt: s.createdAt });
-        set(ref(db, 'stops'), obj);
-      }
-      render();
-    });
-
-    onValue(ref(db, 'members'), snap => {
-      const val = snap.val();
-      members = objToArray(val);
-      if(members.length === 0 && !seededMembers){
-        seededMembers = true;
-        const seeded = defaultMembers();
-        const obj = {};
-        seeded.forEach(m => obj[m.id] = { name: m.name, createdAt: m.createdAt });
-        set(ref(db, 'members'), obj);
-      }
-      render();
-    });
-
-    subscribeToStatus(todayKey);
+    
+    updateClockAndDate();
+    setInterval(updateClockAndDate, 1000);
   }
 
   function subscribeToStatus(key){
@@ -673,10 +549,42 @@ if(isConfigured){
     });
   }
 
+  function checkAlertStatus() {
+    const banner = $('alertBanner');
+    if(!lateThreshold || members.length === 0) {
+      banner.style.display = 'none';
+      return;
+    }
+
+    const now = new Date();
+    const [th, tm] = lateThreshold.split(':').map(Number);
+    
+    // Have we passed the threshold today?
+    const isPastDeadline = now.getHours() > th || (now.getHours() === th && now.getMinutes() >= tm);
+    
+    const missingCount = members.filter(m => !statusMap[m.id]).length;
+
+    if(isPastDeadline) {
+      banner.style.display = 'flex';
+      if(missingCount > 0) {
+        banner.className = 'alert-banner warning';
+        banner.innerHTML = `<span>⚠️</span> <span><strong>Time to move guys!</strong> ${missingCount} member(s) still haven't checked in.</span>`;
+      } else {
+        banner.className = 'alert-banner success';
+        banner.innerHTML = `<span>🎉</span> <span><strong>Everyone is accounted for!</strong> Ready to roll.</span>`;
+      }
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
   function updateClockAndDate(){
     const now = new Date();
     $('clock').textContent = now.toLocaleTimeString(undefined, { hour12:false });
     $('dateDisplay').textContent = formatDate(now);
+    
+    checkAlertStatus(); // Check the alert banner every second
+
     const k = dateKey(now);
     if(k !== todayKey){
       todayKey = k;
@@ -698,8 +606,34 @@ if(isConfigured){
     renderStopSelect();
     renderMemberEditor();
     renderNameSelect();
+    renderMissingPanel();
     renderRoster();
     renderChart();
+  }
+  
+  function renderMissingPanel() {
+    const missingPanel = $('missingPanel');
+    const missing = members.filter(m => !statusMap[m.id]);
+    
+    // Hide panel if no members exist at all, or if literally nobody checked in yet (to avoid early morning clutter)
+    if(members.length === 0 || Object.keys(statusMap).length === 0) {
+      missingPanel.style.display = 'none';
+      return;
+    }
+    
+    missingPanel.style.display = 'block';
+    
+    if(missing.length === 0) {
+      $('missingCountBadge').textContent = 'All here!';
+      $('missingCountBadge').style.color = 'var(--teal)';
+      $('missingList').innerHTML = '<span class="empty-note">Everyone is checked in or marked absent!</span>';
+    } else {
+      $('missingCountBadge').textContent = `${missing.length} missing`;
+      $('missingCountBadge').style.color = 'var(--ink-soft)';
+      $('missingList').innerHTML = missing.map(m => `
+        <span class="name-chip missing">${escapeHtml(m.name)}</span>
+      `).join('');
+    }
   }
 
   function renderStops(){
@@ -845,6 +779,8 @@ if(isConfigured){
       return;
     }
 
+    const [lateH, lateM] = lateThreshold ? lateThreshold.split(':').map(Number) : [24, 0];
+
     groupDefs.forEach(def => {
       const ids = Object.keys(statusMap).filter(id => getStopId(statusMap[id]) === def.key && members.some(m => m.id === id));
       if(ids.length === 0) return;
@@ -867,8 +803,7 @@ if(isConfigured){
         const hours = checkInDate.getHours();
         const minutes = checkInDate.getMinutes();
         
-        // Late calculation logic: Anything past 8:30 AM is highlighted in red
-        const isLate = hours > 8 || (hours === 8 && minutes >= 30); 
+        const isLate = hours > lateH || (hours === lateH && minutes >= lateM); 
         const lateClass = isLate ? 'late' : '';
         const timeStr = checkInDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -1074,7 +1009,26 @@ if(isConfigured){
     return div.innerHTML;
   }
 
-  // --- UPDATED EVENT LISTENERS TO TOGGLE THE VISUAL LISTS ---
+  // --- ADMIN & EDITOR EVENTS ---
+
+  $('toggleSettings').addEventListener('click', () => {
+    const p = $('settingsPanel');
+    p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  });
+
+  $('settingsForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const val = $('lateTimeInput').value;
+    if(isConfigured) {
+      await set(ref(db, 'settings/lateThreshold'), val);
+    } else {
+      lateThreshold = val;
+      localSave('lateThreshold', val);
+      renderRoster();
+    }
+    showToast(`Late threshold saved to ${val}`);
+    $('settingsPanel').style.display = 'none';
+  });
   
   $('stopForm').addEventListener('submit', e => {
     e.preventDefault();
@@ -1088,7 +1042,7 @@ if(isConfigured){
     const routeWrap = $('routeWrap');
     const isHidden = form.style.display === 'none';
     form.style.display = isHidden ? 'flex' : 'none';
-    routeWrap.style.display = isHidden ? 'block' : 'none'; // Only show when editing
+    routeWrap.style.display = isHidden ? 'block' : 'none'; 
     $('toggleStopEditor').textContent = isHidden ? '⚙ Done editing' : '⚙ Edit stops';
     renderStops();
   });
@@ -1105,7 +1059,7 @@ if(isConfigured){
     const memberList = $('memberEditList');
     const isHidden = form.style.display === 'none';
     form.style.display = isHidden ? 'flex' : 'none';
-    memberList.style.display = isHidden ? 'flex' : 'none'; // Only show when editing
+    memberList.style.display = isHidden ? 'flex' : 'none'; 
     $('toggleMemberEditor').textContent = isHidden ? '⚙ Done editing' : '⚙ Edit members';
     renderMemberEditor();
   });
