@@ -222,6 +222,11 @@
   .time-stamp { font-size: 11px; opacity: 0.6; margin-left: 2px; font-weight: 500; }
   .name-chip.late .time-stamp { opacity: 0.8; }
 
+  /* ---------- Missing Groups ---------- */
+  .missing-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px dashed var(--line); }
+  .missing-group:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .missing-group-title { font-size: 12.5px; font-weight: 600; color: var(--slate); text-transform: uppercase; letter-spacing: 0.5px; }
+
   /* ---------- Grouped roster ---------- */
   .point-group{ border: 1.5px solid var(--line); border-radius: 8px; margin-bottom: 10px; overflow: hidden; animation: popIn .3s ease; width: 100%; }
   .point-group.highlight{ border-color: var(--amber); box-shadow: 0 0 0 3px rgba(232,163,61,0.16); }
@@ -309,11 +314,11 @@
       <div class="panel-head">
         <div>
           <h2>Still Waiting...</h2>
-          <p class="sub">Members who haven't checked in yet today.</p>
+          <p class="sub">Missing members, grouped by their last known pickup point.</p>
         </div>
         <span class="stop-count" id="missingCountBadge">0 missing</span>
       </div>
-      <div class="chip-row" id="missingList"></div>
+      <div id="missingList" style="display:flex; flex-direction:column;"></div>
     </section>
 
     <section class="panel">
@@ -421,14 +426,14 @@ if(isConfigured){
 
   let stops = [];
   let members = [];
-  let statusMap = {};
+  let allStatusMap = {}; // Stores historical check-ins to guess missing member stops
+  let statusMap = {};    // Today's check-ins
   let todayKey = '';
   let openGroups = {};
   let revealCounts = {};
   let activeSlice = null;
   const GROUP_BATCH = 6;
   
-  // New Admin state
   let lateThreshold = '08:30'; 
   
   let statusUnsub = null;
@@ -455,14 +460,25 @@ if(isConfigured){
     setTimeout(() => t.remove(), 3100);
   }
 
+  // Local storage helpers
   function localLoad(key, fallback){
-    try{
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    }catch(e){ return fallback; }
+    try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }catch(e){ return fallback; }
   }
   function localSave(key, value){
     try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){}
+  }
+  
+  function localLoadAllStatus() {
+    let all = {};
+    try {
+      for(let i=0; i<localStorage.length; i++){
+        let k = localStorage.key(i);
+        if(k && k.startsWith('status:')){
+          all[k.replace('status:', '')] = JSON.parse(localStorage.getItem(k));
+        }
+      }
+    } catch(e) {}
+    return all;
   }
 
   function objToArray(val){
@@ -474,11 +490,24 @@ if(isConfigured){
     return (typeof val === 'object' && val !== null) ? val.stopId : val;
   }
 
+  // Looks through past days to find where this member checked in last
+  function getLastKnownStop(memberId) {
+    const dates = Object.keys(allStatusMap).sort().reverse(); 
+    for (let date of dates) {
+      if (date === todayKey) continue; 
+      const dayData = allStatusMap[date];
+      if (dayData && dayData[memberId]) {
+        const stopId = getStopId(dayData[memberId]);
+        if (stopId !== 'NOT_COMING') return stopId;
+      }
+    }
+    return null; 
+  }
+
   const defaultStops = () => ([
     { id: uid(), name: 'Gate A', createdAt: Date.now() },
     { id: uid(), name: 'Gate B', createdAt: Date.now() }
   ]);
-
   const defaultMembers = () => ([
     { id: uid(), name: 'Alex Johnson', createdAt: Date.now() },
     { id: uid(), name: 'Priya Sharma', createdAt: Date.now() }
@@ -493,17 +522,19 @@ if(isConfigured){
       localSave('stops', stops);
       members = localLoad('members', null) || defaultMembers();
       localSave('members', members);
-      statusMap = localLoad('status:' + todayKey, {});
+      
+      allStatusMap = localLoadAllStatus();
+      statusMap = allStatusMap[todayKey] || {};
+      
       lateThreshold = localLoad('lateThreshold', '08:30');
       $('lateTimeInput').value = lateThreshold;
       render();
     } else {
-      // Sync Admin Settings
       onValue(ref(db, 'settings/lateThreshold'), snap => {
         if(snap.exists()) {
           lateThreshold = snap.val();
           $('lateTimeInput').value = lateThreshold;
-          renderRoster(); // Re-render to update late colors if time changed
+          renderRoster(); 
         }
       });
 
@@ -533,18 +564,19 @@ if(isConfigured){
         render();
       });
 
-      subscribeToStatus(todayKey);
+      subscribeToAllStatus();
     }
     
     updateClockAndDate();
     setInterval(updateClockAndDate, 1000);
   }
 
-  function subscribeToStatus(key){
+  function subscribeToAllStatus(){
     if(!isConfigured) return;
     if(statusUnsub) statusUnsub();
-    statusUnsub = onValue(ref(db, 'status/' + key), snap => {
-      statusMap = snap.val() || {};
+    statusUnsub = onValue(ref(db, 'status'), snap => {
+      allStatusMap = snap.val() || {};
+      statusMap = allStatusMap[todayKey] || {};
       render();
     });
   }
@@ -559,9 +591,7 @@ if(isConfigured){
     const now = new Date();
     const [th, tm] = lateThreshold.split(':').map(Number);
     
-    // Have we passed the threshold today?
     const isPastDeadline = now.getHours() > th || (now.getHours() === th && now.getMinutes() >= tm);
-    
     const missingCount = members.filter(m => !statusMap[m.id]).length;
 
     if(isPastDeadline) {
@@ -583,7 +613,7 @@ if(isConfigured){
     $('clock').textContent = now.toLocaleTimeString(undefined, { hour12:false });
     $('dateDisplay').textContent = formatDate(now);
     
-    checkAlertStatus(); // Check the alert banner every second
+    checkAlertStatus(); 
 
     const k = dateKey(now);
     if(k !== todayKey){
@@ -592,9 +622,10 @@ if(isConfigured){
       revealCounts = {};
       activeSlice = null;
       if(isConfigured){
-        subscribeToStatus(todayKey);
+        subscribeToAllStatus();
       }else{
-        statusMap = localLoad('status:' + todayKey, {});
+        allStatusMap = localLoadAllStatus();
+        statusMap = allStatusMap[todayKey] || {};
       }
       showToast('New day started — roll call reset.');
       render();
@@ -615,7 +646,6 @@ if(isConfigured){
     const missingPanel = $('missingPanel');
     const missing = members.filter(m => !statusMap[m.id]);
     
-    // Hide panel if no members exist at all, or if literally nobody checked in yet (to avoid early morning clutter)
     if(members.length === 0 || Object.keys(statusMap).length === 0) {
       missingPanel.style.display = 'none';
       return;
@@ -630,9 +660,42 @@ if(isConfigured){
     } else {
       $('missingCountBadge').textContent = `${missing.length} missing`;
       $('missingCountBadge').style.color = 'var(--ink-soft)';
-      $('missingList').innerHTML = missing.map(m => `
-        <span class="name-chip missing">${escapeHtml(m.name)}</span>
-      `).join('');
+
+      // Group by their last known stop
+      const missingByStop = {};
+      missing.forEach(m => {
+        let stopId = getLastKnownStop(m.id);
+        // If the stop they used previously was deleted, put them in Unknown
+        if (stopId && !stops.some(s => s.id === stopId)) stopId = null;
+        
+        if (!missingByStop[stopId]) missingByStop[stopId] = [];
+        missingByStop[stopId].push(m);
+      });
+
+      let html = '';
+      
+      stops.forEach(stop => {
+        if (missingByStop[stop.id] && missingByStop[stop.id].length > 0) {
+          html += `<div class="missing-group">
+            <div class="missing-group-title">${escapeHtml(stop.name)}</div>
+            <div class="chip-row">
+              ${missingByStop[stop.id].map(m => `<span class="name-chip missing">${escapeHtml(m.name)}</span>`).join('')}
+            </div>
+          </div>`;
+        }
+      });
+
+      // Show members with no history (or a deleted stop history) at the bottom
+      if (missingByStop['null'] && missingByStop['null'].length > 0) {
+        html += `<div class="missing-group">
+          <div class="missing-group-title">No Previous Stop Data</div>
+          <div class="chip-row">
+            ${missingByStop['null'].map(m => `<span class="name-chip missing">${escapeHtml(m.name)}</span>`).join('')}
+          </div>
+        </div>`;
+      }
+
+      $('missingList').innerHTML = html;
     }
   }
 
@@ -698,6 +761,7 @@ if(isConfigured){
     }else{
       stops = stops.filter(s => s.id !== id);
       idsToClear.forEach(mid => delete statusMap[mid]);
+      allStatusMap[todayKey] = statusMap;
       localSave('stops', stops);
       localSave('status:' + todayKey, statusMap);
       render();
@@ -757,6 +821,7 @@ if(isConfigured){
     }else{
       members = members.filter(x => x.id !== id);
       delete statusMap[id];
+      allStatusMap[todayKey] = statusMap;
       localSave('members', members);
       localSave('status:' + todayKey, statusMap);
       render();
@@ -868,6 +933,7 @@ if(isConfigured){
       await set(ref(db, 'status/' + todayKey + '/' + m.id), checkInData);
     }else{
       statusMap[m.id] = checkInData;
+      allStatusMap[todayKey] = statusMap;
       localSave('status:' + todayKey, statusMap);
     }
 
@@ -891,6 +957,7 @@ if(isConfigured){
       await remove(ref(db, 'status/' + todayKey + '/' + id));
     }else{
       delete statusMap[id];
+      allStatusMap[todayKey] = statusMap;
       localSave('status:' + todayKey, statusMap);
       render();
     }
