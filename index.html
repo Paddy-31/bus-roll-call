@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Route Roll Call — Daily Pickup Manifest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -21,7 +21,7 @@
     --shadow: 0 10px 30px -12px rgba(27,42,74,0.18);
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
+  html,body{margin:0;padding:0; width:100%; overflow-x:hidden;}
   body{
     background:
       radial-gradient(circle at 8% 0%, rgba(232,163,61,0.08), transparent 40%),
@@ -32,7 +32,7 @@
     min-height:100vh;
     padding: 28px 20px 60px;
   }
-  .board{ max-width: 1080px; margin: 0 auto; }
+  .board{ max-width: 1080px; margin: 0 auto; width:100%; }
 
   /* ---------- Header / destination board ---------- */
   .destination-board{
@@ -86,7 +86,7 @@
     margin-top:4px;
   }
 
-  main{ display:grid; grid-template-columns: 1fr; gap: 22px; margin-top: 22px; }
+  main{ display:grid; grid-template-columns: 1fr; gap: 22px; margin-top: 22px; width:100%; }
 
   .panel{
     background: var(--paper);
@@ -96,6 +96,7 @@
     box-shadow: var(--shadow);
     opacity:0;
     animation: riseIn .6s ease forwards;
+    width: 100%;
   }
   .panel:nth-of-type(1){ animation-delay: .08s; }
   .panel:nth-of-type(2){ animation-delay: .16s; }
@@ -116,7 +117,7 @@
   }
   .btn-gear{ font-size: 12.5px; padding: 8px 14px; white-space:nowrap; }
 
-  form.inline-form{ display:flex; gap:10px; margin-bottom: 18px; flex-wrap:wrap; }
+  form.inline-form{ display:flex; gap:10px; margin-bottom: 18px; flex-wrap:wrap; width: 100%; }
   form.inline-form input[type=text]{
     flex:1;
     min-width: 180px;
@@ -154,6 +155,7 @@
     position:relative;
     padding: 34px 6px 10px;
     overflow-x: auto;
+    width: 100%;
   }
   .route-track{
     position:relative;
@@ -230,7 +232,7 @@
   }
 
   /* ---------- Roster ---------- */
-  .roster-list{ display:flex; flex-direction:column; gap: 10px; }
+  .roster-list{ display:flex; flex-direction:column; gap: 10px; width: 100%; }
   select.stop-select{
     font-family:'Inter', sans-serif;
     font-size: 13.5px;
@@ -249,8 +251,9 @@
   .chart-wrap{
     display:flex; align-items:center; gap: 34px; flex-wrap:wrap;
     justify-content:center;
+    width: 100%;
   }
-  #pieChart{ width: 220px; height:220px; }
+  #pieChart{ width: 220px; height:220px; max-width: 100%; }
   #pieChart circle{ transition: stroke-dasharray .7s cubic-bezier(.4,0,.2,1), stroke-dashoffset .7s cubic-bezier(.4,0,.2,1); }
   .chart-center-label{
     font-family:'Space Grotesk', sans-serif;
@@ -271,6 +274,7 @@
     margin-top: 20px;
     border-top: 1px dashed var(--line);
     padding-top: 18px;
+    width: 100%;
   }
   .chart-info-hint{ color: var(--slate); font-size: 13px; font-style: italic; }
   .chart-info-head{ display:flex; align-items:center; gap:10px; margin-bottom: 12px; }
@@ -279,7 +283,7 @@
   .chart-info-count{ font-family:'IBM Plex Mono', monospace; color: var(--slate); font-size:12.5px; margin-left:auto; }
   
   /* ---------- Member Chips (includes Late styling) ---------- */
-  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; width: 100%; }
   .name-chip{
     display:inline-flex; align-items:center; gap:6px;
     background: var(--cloud); border:1px solid var(--line);
@@ -315,6 +319,7 @@
     overflow: hidden;
     transition: border-color .3s ease, box-shadow .3s ease;
     animation: popIn .3s ease;
+    width: 100%;
   }
   .point-group.highlight{ border-color: var(--amber); box-shadow: 0 0 0 3px rgba(232,163,61,0.16); }
   .group-header{
@@ -347,7 +352,7 @@
   .show-more-btn:hover{ border-color: var(--amber); color: var(--ink); }
 
   /* ---------- Fixed member editor ---------- */
-  .member-chip-wrap{ display:flex; flex-wrap:wrap; gap:10px; }
+  .member-chip-wrap{ display:flex; flex-wrap:wrap; gap:10px; width: 100%; }
   .member-edit-chip{
     display:inline-flex; align-items:center; gap:8px;
     background: #FCFBF8; border: 1.5px solid var(--line);
@@ -383,23 +388,54 @@
     .bus-icon{ animation: none; left: 2%; }
   }
 
-  /* Upgraded Mobile view layout */
+  /* ========================================================
+     STRICT MOBILE VIEWPORT SETTINGS 
+     (Stops all horizontal scrolling and forces items to wrap)
+     ======================================================== */
   @media (max-width: 560px){
-    body { padding: 16px 12px 40px; }
-    .destination-board { flex-direction:column; align-items:flex-start; text-align:left; gap: 12px; padding: 20px; }
-    .board-left h1 { font-size: 24px; }
+    body { padding: 12px 8px 40px; }
+    .destination-board { 
+      flex-direction:column; 
+      align-items:flex-start; 
+      text-align:left; 
+      gap: 12px; 
+      padding: 20px 16px; 
+    }
+    .board-left h1 { font-size: 24px; word-break: break-word; }
     .board-right { text-align:left; }
     .clock { font-size: 22px; }
-    .panel { padding: 20px 16px; }
     
-    form.inline-form { flex-direction: column; align-items: stretch; }
+    .panel { padding: 20px 14px; }
+    
+    /* Make forms stack vertically 100% wide */
+    form.inline-form { flex-direction: column; align-items: stretch; gap: 8px; }
     form.inline-form input[type=text], 
     select.stop-select, 
     form.inline-form button { 
       width: 100%; 
       min-width: 100%; 
+      box-sizing: border-box;
     }
-    .chart-wrap { gap: 20px; }
+    
+    /* Allow the Bus Stops to wrap vertically instead of scrolling horizontally */
+    .route-line-wrap { overflow-x: hidden; padding-bottom: 0; }
+    .stops-row { 
+      flex-wrap: wrap; 
+      min-width: 100%; 
+      justify-content: center; 
+      gap: 16px 12px; 
+      padding-top: 24px; 
+    }
+    .stop-chip { width: 45%; text-align: center; }
+    .stop-name { white-space: normal; text-align: center; line-height: 1.3; }
+
+    /* Fix the Chart layout */
+    .chart-wrap { gap: 20px; flex-direction: column; }
+    .legend { min-width: 100%; width: 100%; }
+    
+    /* Fix Roster list wrap */
+    .group-header { flex-wrap: nowrap; padding: 12px; }
+    .group-title { font-size: 13.5px; }
   }
 </style>
 </head>
@@ -894,7 +930,6 @@ if(isConfigured){
     const m = members.find(x => x.id === memberId);
     if(!m){ showToast('That member no longer exists — pick again.'); return; }
 
-    // Create the check-in object including the exact time
     const checkInData = { stopId: value, time: Date.now() };
 
     if(isConfigured){
