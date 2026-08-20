@@ -273,7 +273,13 @@
     .legend { min-width: 100%; width: 100%; }
     .group-header { flex-wrap: nowrap; padding: 12px; }
     .group-title { font-size: 13.5px; }
+    
+    /* Missing Panel Mobile Header Alignment */
+    #missingPanel .panel-head > div:first-child { flex: 1; }
+    .missing-header-actions { margin-top: 8px; width: 100%; justify-content: space-between; }
   }
+  
+  .missing-header-actions { display: flex; align-items: center; gap: 12px; }
 </style>
 </head>
 <body>
@@ -309,16 +315,19 @@
       </form>
     </section>
 
-    <!-- Still Waiting Panel (Auto-hides if empty) -->
+    <!-- Still Waiting Panel (Names hidden by default) -->
     <section class="panel" id="missingPanel" style="display:none;">
-      <div class="panel-head">
+      <div class="panel-head" style="align-items: center;">
         <div>
           <h2>Still Waiting...</h2>
-          <p class="sub">Missing members, grouped by their last known pickup point.</p>
+          <p class="sub" style="margin-bottom: 0;">Missing members, based on their last pickup point.</p>
         </div>
-        <span class="stop-count" id="missingCountBadge">0 missing</span>
+        <div class="missing-header-actions">
+          <span class="stop-count" id="missingCountBadge">0 missing</span>
+          <button type="button" class="btn-ghost btn-gear" id="toggleMissingBtn">Show remaining</button>
+        </div>
       </div>
-      <div id="missingList" style="display:flex; flex-direction:column;"></div>
+      <div id="missingList" style="display:none; flex-direction:column; margin-top: 20px;"></div>
     </section>
 
     <section class="panel">
@@ -426,8 +435,8 @@ if(isConfigured){
 
   let stops = [];
   let members = [];
-  let allStatusMap = {}; // Stores historical check-ins to guess missing member stops
-  let statusMap = {};    // Today's check-ins
+  let allStatusMap = {}; 
+  let statusMap = {};    
   let todayKey = '';
   let openGroups = {};
   let revealCounts = {};
@@ -460,7 +469,6 @@ if(isConfigured){
     setTimeout(() => t.remove(), 3100);
   }
 
-  // Local storage helpers
   function localLoad(key, fallback){
     try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }catch(e){ return fallback; }
   }
@@ -490,7 +498,6 @@ if(isConfigured){
     return (typeof val === 'object' && val !== null) ? val.stopId : val;
   }
 
-  // Looks through past days to find where this member checked in last
   function getLastKnownStop(memberId) {
     const dates = Object.keys(allStatusMap).sort().reverse(); 
     for (let date of dates) {
@@ -644,6 +651,7 @@ if(isConfigured){
   
   function renderMissingPanel() {
     const missingPanel = $('missingPanel');
+    const toggleBtn = $('toggleMissingBtn');
     const missing = members.filter(m => !statusMap[m.id]);
     
     if(members.length === 0 || Object.keys(statusMap).length === 0) {
@@ -656,16 +664,16 @@ if(isConfigured){
     if(missing.length === 0) {
       $('missingCountBadge').textContent = 'All here!';
       $('missingCountBadge').style.color = 'var(--teal)';
-      $('missingList').innerHTML = '<span class="empty-note">Everyone is checked in or marked absent!</span>';
+      toggleBtn.style.display = 'none'; // Hide button when everyone is here
+      $('missingList').style.display = 'none';
     } else {
       $('missingCountBadge').textContent = `${missing.length} missing`;
       $('missingCountBadge').style.color = 'var(--ink-soft)';
+      toggleBtn.style.display = 'inline-block'; // Ensure button is visible
 
-      // Group by their last known stop
       const missingByStop = {};
       missing.forEach(m => {
         let stopId = getLastKnownStop(m.id);
-        // If the stop they used previously was deleted, put them in Unknown
         if (stopId && !stops.some(s => s.id === stopId)) stopId = null;
         
         if (!missingByStop[stopId]) missingByStop[stopId] = [];
@@ -673,7 +681,6 @@ if(isConfigured){
       });
 
       let html = '';
-      
       stops.forEach(stop => {
         if (missingByStop[stop.id] && missingByStop[stop.id].length > 0) {
           html += `<div class="missing-group">
@@ -685,7 +692,6 @@ if(isConfigured){
         }
       });
 
-      // Show members with no history (or a deleted stop history) at the bottom
       if (missingByStop['null'] && missingByStop['null'].length > 0) {
         html += `<div class="missing-group">
           <div class="missing-group-title">No Previous Stop Data</div>
@@ -1095,6 +1101,19 @@ if(isConfigured){
     }
     showToast(`Late threshold saved to ${val}`);
     $('settingsPanel').style.display = 'none';
+  });
+
+  // Handle Missing List Toggle
+  $('toggleMissingBtn').addEventListener('click', () => {
+    const list = $('missingList');
+    const btn = $('toggleMissingBtn');
+    if (list.style.display === 'none') {
+      list.style.display = 'flex';
+      btn.textContent = 'Hide remaining';
+    } else {
+      list.style.display = 'none';
+      btn.textContent = 'Show remaining';
+    }
   });
   
   $('stopForm').addEventListener('submit', e => {
