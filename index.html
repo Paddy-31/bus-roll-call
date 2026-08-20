@@ -6,6 +6,11 @@
 <title>Route Roll Call — Daily Pickup Manifest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<!-- Leaflet.js Map CSS & JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
 <style>
   :root{
     --ink:#1B2A4A;
@@ -189,6 +194,14 @@
   .stop-remove{ font-size: 11px; color: var(--slate); background:none; border:none; cursor:pointer; text-decoration: underline; padding: 0; }
   .empty-note{ color: var(--slate); font-size: 13.5px; font-style: italic; padding: 6px 0 2px; }
 
+  /* ---------- Live Map Section ---------- */
+  #busMap { height: 300px; width: 100%; border-radius: 8px; border: 1.5px solid var(--line); z-index: 1; }
+  .custom-bus-icon { font-size: 26px; text-align: center; line-height: 30px; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)); }
+  .live-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--slate); margin-bottom: 12px; }
+  .pulse-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--teal); animation: pulseMap 1.5s infinite; }
+  .pulse-dot.offline { background: var(--slate); animation: none; }
+  @keyframes pulseMap { 0% {box-shadow: 0 0 0 0 rgba(46,125,107,0.7);} 70% {box-shadow: 0 0 0 10px rgba(46,125,107,0);} 100% {box-shadow: 0 0 0 0 rgba(46,125,107,0);} }
+
   /* ---------- Roster & Charts ---------- */
   .roster-list{ display:flex; flex-direction:column; gap: 10px; width: 100%; }
   select.stop-select{ font-family:'Inter', sans-serif; font-size: 13.5px; padding: 9px 12px; border-radius: 7px; border: 1.5px solid var(--line); background: #fff; color: var(--ink); min-width: 190px; cursor:pointer; }
@@ -274,7 +287,6 @@
     .group-header { flex-wrap: nowrap; padding: 12px; }
     .group-title { font-size: 13.5px; }
     
-    /* Missing Panel Mobile Header Alignment */
     #missingPanel .panel-head > div:first-child { flex: 1; }
     .missing-header-actions { margin-top: 8px; width: 100%; justify-content: space-between; }
   }
@@ -315,7 +327,24 @@
       </form>
     </section>
 
-    <!-- Still Waiting Panel (Names hidden by default) -->
+    <!-- LIVE MAP TRACKING PANEL -->
+    <section class="panel">
+      <div class="panel-head" style="align-items: center; margin-bottom: 0;">
+        <div>
+          <h2>Live Bus Tracker</h2>
+          <p class="sub" style="margin-bottom: 0;">See where the bus is right now.</p>
+        </div>
+        <button type="button" class="btn-primary" id="toggleLocationBtn">📍 Share My Location (As Bus)</button>
+      </div>
+      <div style="margin-top: 18px;">
+        <div class="live-status" id="mapStatusText">
+          <span class="pulse-dot offline" id="mapStatusDot"></span> Bus is currently offline
+        </div>
+        <div id="busMap"></div>
+      </div>
+    </section>
+
+    <!-- Still Waiting Panel -->
     <section class="panel" id="missingPanel" style="display:none;">
       <div class="panel-head" style="align-items: center;">
         <div>
@@ -664,12 +693,12 @@ if(isConfigured){
     if(missing.length === 0) {
       $('missingCountBadge').textContent = 'All here!';
       $('missingCountBadge').style.color = 'var(--teal)';
-      toggleBtn.style.display = 'none'; // Hide button when everyone is here
+      toggleBtn.style.display = 'none'; 
       $('missingList').style.display = 'none';
     } else {
       $('missingCountBadge').textContent = `${missing.length} missing`;
       $('missingCountBadge').style.color = 'var(--ink-soft)';
-      toggleBtn.style.display = 'inline-block'; // Ensure button is visible
+      toggleBtn.style.display = 'inline-block'; 
 
       const missingByStop = {};
       missing.forEach(m => {
@@ -1082,6 +1111,103 @@ if(isConfigured){
     return div.innerHTML;
   }
 
+  // --- LIVE MAP LOGIC (Leaflet + Firebase) ---
+  let busMap = null;
+  let busMarker = null;
+  let watchId = null;
+  let isSharingLocation = false;
+
+  function initMap() {
+    busMap = L.map('busMap').setView([16.7050, 74.2433], 13); // Approximate center, will snap to GPS
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(busMap);
+
+    const customIcon = L.divIcon({
+      className: 'custom-bus-icon',
+      html: '🚌',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15]
+    });
+
+    busMarker = L.marker([0, 0], {icon: customIcon});
+    
+    if (isConfigured) {
+      onValue(ref(db, 'busLocation'), (snap) => {
+        const data = snap.val();
+        const statusText = $('mapStatusText');
+        const statusDot = $('mapStatusDot');
+
+        if (data && data.active) {
+          const latLng = [data.lat, data.lng];
+          if (!busMap.hasLayer(busMarker)) {
+            busMarker.addTo(busMap);
+          }
+          busMarker.setLatLng(latLng);
+          
+          statusDot.className = 'pulse-dot';
+          statusText.innerHTML = `<span class="pulse-dot"></span> Bus is sharing live location`;
+
+          // Only auto-pan to the bus if the viewer is NOT the one driving
+          // (otherwise it fights user panning)
+          if (!isSharingLocation) {
+             busMap.flyTo(latLng, 15, { animate: true, duration: 1.5 });
+          }
+        } else {
+          if (busMap.hasLayer(busMarker)) {
+            busMarker.remove();
+          }
+          statusDot.className = 'pulse-dot offline';
+          statusText.innerHTML = `<span class="pulse-dot offline"></span> Bus is currently offline`;
+        }
+      });
+    }
+  }
+
+  $('toggleLocationBtn').addEventListener('click', () => {
+    if (!isSharingLocation) {
+      if (!navigator.geolocation) {
+        showToast("Geolocation is not supported by your browser");
+        return;
+      }
+      $('toggleLocationBtn').textContent = "🛑 Stop Sharing Location";
+      $('toggleLocationBtn').classList.replace('btn-primary', 'btn-ghost');
+      isSharingLocation = true;
+      showToast("Live location sharing started! Keep browser open.");
+
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          busMap.setView([lat, lng], 16);
+          if(isConfigured) {
+             set(ref(db, 'busLocation'), { lat, lng, timestamp: Date.now(), active: true });
+          }
+        },
+        (error) => {
+          showToast("Error getting location. Ensure GPS is on.");
+          stopSharing();
+        },
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+      );
+    } else {
+      stopSharing();
+    }
+  });
+
+  function stopSharing() {
+    if (watchId) navigator.geolocation.clearWatch(watchId);
+    isSharingLocation = false;
+    $('toggleLocationBtn').textContent = "📍 Share My Location (As Bus)";
+    $('toggleLocationBtn').classList.replace('btn-ghost', 'btn-primary');
+    if(isConfigured) {
+      set(ref(db, 'busLocation/active'), false);
+    }
+    showToast("Live location sharing stopped.");
+  }
+
   // --- ADMIN & EDITOR EVENTS ---
 
   $('toggleSettings').addEventListener('click', () => {
@@ -1159,7 +1285,11 @@ if(isConfigured){
     stopSelect.value = '';
   });
 
+  // Start app
   init();
+  
+  // Wait a fraction of a second for DOM to load before starting map
+  setTimeout(initMap, 500); 
 })();
 </script>
 </body>
