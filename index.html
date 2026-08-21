@@ -147,7 +147,7 @@
   }
   .btn-gear{ font-size: 12.5px; padding: 8px 14px; white-space:nowrap; }
 
-  form.inline-form{ display:flex; gap:10px; margin-bottom: 18px; flex-wrap:wrap; width: 100%; }
+  form.inline-form{ display:flex; gap:10px; margin-bottom: 18px; flex-wrap:wrap; width: 100%; align-items: center; }
   form.inline-form input[type=text], form.inline-form input[type=time]{
     flex:1;
     min-width: 180px;
@@ -225,11 +225,24 @@
   .chart-info-title{ font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:15px; }
   .chart-info-count{ font-family:'IBM Plex Mono', monospace; color: var(--slate); font-size:12.5px; margin-left:auto; }
   
-  /* ---------- Member Chips ---------- */
-  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; width: 100%; }
-  .name-chip{ display:inline-flex; align-items:center; gap:6px; background: var(--cloud); border:1px solid var(--line); padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight:500; animation: popIn .25s ease; transition: background .2s ease, border-color .2s ease, color .2s ease; }
+  /* ---------- Member Chips & Notes ---------- */
+  .chip-row{ display:flex; flex-wrap:wrap; gap:10px; width: 100%; }
+  .name-chip{ 
+    display:inline-flex; flex-direction: column; align-items: flex-start; gap:4px; 
+    background: var(--cloud); border:1px solid var(--line); 
+    padding: 8px 12px; border-radius: 12px; font-size: 13px; font-weight:500; 
+    animation: popIn .25s ease; transition: background .2s ease, border-color .2s ease, color .2s ease; 
+  }
+  .name-chip-main { display: flex; align-items: center; gap: 6px; }
+  .member-note { 
+    font-size: 11.5px; color: var(--slate); font-style: italic; font-weight: 400; 
+    padding-left: 6px; border-left: 2px solid var(--amber-soft); margin-left: 2px;
+    word-wrap: break-word; max-width: 200px; line-height: 1.3;
+  }
   .name-chip.late { background: rgba(217,83,79,0.08); border-color: rgba(217,83,79,0.3); color: var(--coral); }
-  .name-chip.missing { background: #fff; border-style: dashed; border-color: var(--slate); color: var(--slate); opacity: 0.8; }
+  .name-chip.late .member-note { border-left-color: rgba(217,83,79,0.4); color: var(--coral); opacity: 0.8; }
+  
+  .name-chip.missing { background: #fff; border-style: dashed; border-color: var(--slate); color: var(--slate); opacity: 0.8; align-items: center; border-radius: 20px; padding: 6px 12px;}
   .name-chip .remove-x{ cursor:pointer; color: var(--slate); font-size: 12px; line-height:1; padding-left: 2px; }
   .name-chip .remove-x:hover{ color: var(--coral); }
   .time-stamp { font-size: 11px; opacity: 0.6; margin-left: 2px; font-weight: 500; }
@@ -379,12 +392,13 @@
       <h2>Check in for today</h2>
       <p class="sub">Pick your name, choose your pickup point — or let us know you're not coming.</p>
       <form class="inline-form" id="checkinForm">
-        <select class="stop-select" id="nameSelect">
+        <select class="stop-select" id="nameSelect" required>
           <option value="">Select your name…</option>
         </select>
-        <select class="stop-select" id="stopSelect">
+        <select class="stop-select" id="stopSelect" required>
           <option value="">Select pickup point…</option>
         </select>
+        <input type="text" id="noteInput" placeholder="Leave a note (optional)..." maxlength="60" />
         <button type="submit" class="btn-primary">Check in</button>
       </form>
       <div class="roster-list" id="rosterList"></div>
@@ -914,6 +928,7 @@ if(isConfigured){
         const m = members.find(x => x.id === id);
         const statusVal = statusMap[id];
         const timeMs = (typeof statusVal === 'object' && statusVal.time) ? statusVal.time : Date.now();
+        const note = (typeof statusVal === 'object' && statusVal.note) ? statusVal.note : '';
         
         const checkInDate = new Date(timeMs);
         const hours = checkInDate.getHours();
@@ -925,8 +940,11 @@ if(isConfigured){
 
         return `
           <span class="name-chip ${lateClass}">
-            ${escapeHtml(m.name)} <span class="time-stamp">(${timeStr})</span>
-            <span class="remove-x" data-id="${id}" title="Remove check-in">✕</span>
+            <div class="name-chip-main">
+              ${escapeHtml(m.name)} <span class="time-stamp">(${timeStr})</span>
+              <span class="remove-x" data-id="${id}" title="Remove check-in">✕</span>
+            </div>
+            ${note ? `<div class="member-note">${escapeHtml(note)}</div>` : ''}
           </span>`;
       }).join('');
 
@@ -971,7 +989,7 @@ if(isConfigured){
     });
   }
 
-  async function checkIn(memberId, value){
+  async function checkIn(memberId, value, noteText){
     if(!memberId){ showToast('Select your name first.'); return; }
     if(!value){ showToast('Choose a pickup point, or "Not coming today".'); return; }
 
@@ -979,6 +997,9 @@ if(isConfigured){
     if(!m){ showToast('That member no longer exists — pick again.'); return; }
 
     const checkInData = { stopId: value, time: Date.now() };
+    if(noteText && noteText.trim() !== '') {
+      checkInData.note = noteText.trim();
+    }
 
     if(isConfigured){
       await set(ref(db, 'status/' + todayKey + '/' + m.id), checkInData);
@@ -1112,8 +1133,8 @@ if(isConfigured){
         <span class="chart-info-count">${names.length} ${names.length === 1 ? 'person' : 'people'}</span>
       </div>
       <div class="chip-row">
-        ${shown.map(n => `<span class="name-chip">${escapeHtml(n)}</span>`).join('')}
-        ${extra > 0 ? `<span class="name-chip">+${extra} more</span>` : ''}
+        ${shown.map(n => `<span class="name-chip"><div class="name-chip-main">${escapeHtml(n)}</div></span>`).join('')}
+        ${extra > 0 ? `<span class="name-chip"><div class="name-chip-main">+${extra} more</div></span>` : ''}
       </div>
     `;
   }
@@ -1195,6 +1216,7 @@ if(isConfigured){
         const m = members.find(x => x.id === id);
         const statusVal = histMap[id];
         const timeMs = (typeof statusVal === 'object' && statusVal.time) ? statusVal.time : 0;
+        const note = (typeof statusVal === 'object' && statusVal.note) ? statusVal.note : '';
         
         let timeStr = '';
         let isLateClass = '';
@@ -1208,9 +1230,12 @@ if(isConfigured){
         }
 
         return `
-          <span class="name-chip ${isLateClass}" style="padding-right:12px;">
-            ${escapeHtml(m.name)} 
-            ${timeStr ? `<span class="time-stamp">(${timeStr})</span>` : ''}
+          <span class="name-chip ${isLateClass}" style="margin-right:8px; margin-bottom:8px;">
+            <div class="name-chip-main">
+              ${escapeHtml(m.name)} 
+              ${timeStr ? `<span class="time-stamp">(${timeStr})</span>` : ''}
+            </div>
+            ${note ? `<div class="member-note">${escapeHtml(note)}</div>` : ''}
           </span>`;
       }).join('');
 
@@ -1400,9 +1425,13 @@ if(isConfigured){
     e.preventDefault();
     const nameSelect = $('nameSelect');
     const stopSelect = $('stopSelect');
-    checkIn(nameSelect.value, stopSelect.value);
+    const noteInput = $('noteInput');
+    
+    checkIn(nameSelect.value, stopSelect.value, noteInput.value);
+    
     nameSelect.value = '';
     stopSelect.value = '';
+    noteInput.value = '';
   });
 
   // Start app
