@@ -76,7 +76,7 @@
     margin: 0;
     letter-spacing: 0.5px;
   }
-  .board-right{ text-align:right; z-index:1; }
+  .board-right{ text-align:right; z-index:1; display: flex; flex-direction: column; align-items: flex-end; }
   .clock{
     font-family:'IBM Plex Mono', monospace;
     font-size: 26px;
@@ -91,6 +91,7 @@
     margin-top:4px;
   }
 
+  .header-actions { display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end; }
   .btn-header {
     background: rgba(255,255,255,0.1);
     color: #fff;
@@ -99,7 +100,6 @@
     font-size: 12px;
     border-radius: 6px;
     cursor: pointer;
-    margin-top: 10px;
     transition: background 0.2s;
   }
   .btn-header:hover { background: rgba(255,255,255,0.2); }
@@ -273,8 +273,9 @@
     body { padding: 12px 8px 40px; }
     .destination-board { flex-direction:column; align-items:flex-start; text-align:left; gap: 12px; padding: 20px 16px; }
     .board-left h1 { font-size: 24px; word-break: break-word; }
-    .board-right { text-align:left; width: 100%; display: flex; justify-content: space-between; align-items: center;}
+    .board-right { text-align:left; width: 100%; align-items: flex-start; }
     .clock { font-size: 20px; }
+    .header-actions { width: 100%; justify-content: flex-start; }
     .panel { padding: 20px 14px; }
     form.inline-form { flex-direction: column; align-items: stretch; gap: 8px; }
     form.inline-form input[type=text], form.inline-form input[type=time], select.stop-select, form.inline-form button { width: 100%; min-width: 100%; box-sizing: border-box; }
@@ -305,7 +306,10 @@
     <div class="board-right">
       <div class="clock" id="clock">--:--:--</div>
       <div class="date" id="dateDisplay">Loading date…</div>
-      <button class="btn-header" id="toggleSettings">⚙️ Settings</button>
+      <div class="header-actions">
+        <button class="btn-header" id="toggleHistoryBtn">📅 History</button>
+        <button class="btn-header" id="toggleSettings">⚙️ Settings</button>
+      </div>
     </div>
   </header>
 
@@ -325,6 +329,18 @@
         <input type="time" id="lateTimeInput" required />
         <button type="submit" class="btn-primary">Save Deadline</button>
       </form>
+    </section>
+
+    <!-- History Panel (Hidden by default) -->
+    <section class="panel" id="historyPanel" style="display:none;">
+      <div class="panel-head">
+        <div>
+          <h2>Manifest History</h2>
+          <p class="sub" style="margin-bottom: 12px;">Review check-in counts and timestamps for previous dates.</p>
+        </div>
+      </div>
+      <select id="historyDateSelect" class="stop-select" style="margin-bottom: 20px;"></select>
+      <div id="historyDataList" style="display:flex; flex-direction:column; gap: 8px;"></div>
     </section>
 
     <!-- LIVE MAP TRACKING PANEL -->
@@ -1111,6 +1127,112 @@ if(isConfigured){
     return div.innerHTML;
   }
 
+  // --- HISTORY LOGIC ---
+  $('toggleHistoryBtn').addEventListener('click', () => {
+    const p = $('historyPanel');
+    if (p.style.display === 'none') {
+      p.style.display = 'block';
+      renderHistoryDates();
+    } else {
+      p.style.display = 'none';
+    }
+  });
+
+  function renderHistoryDates() {
+    const sel = $('historyDateSelect');
+    const dates = Object.keys(allStatusMap).sort().reverse();
+    const currentVal = sel.value;
+    
+    if (dates.length === 0) {
+      sel.innerHTML = '<option value="">No history available</option>';
+      $('historyDataList').innerHTML = '<span class="empty-note">No check-ins recorded yet.</span>';
+      return;
+    }
+    
+    sel.innerHTML = '<option value="">Select a past date...</option>' + 
+      dates.map(d => `<option value="${d}">${d}</option>`).join('');
+      
+    if (currentVal && dates.includes(currentVal)) {
+      sel.value = currentVal;
+    }
+    renderHistoryData();
+  }
+
+  $('historyDateSelect').addEventListener('change', renderHistoryData);
+
+  function renderHistoryData() {
+    const list = $('historyDataList');
+    const date = $('historyDateSelect').value;
+    
+    if (!date) {
+      list.innerHTML = '<span class="empty-note">Select a date above to view its history.</span>';
+      return;
+    }
+    
+    const histMap = allStatusMap[date] || {};
+    const anyCheckins = Object.keys(histMap).length > 0;
+    
+    if (!anyCheckins) {
+      list.innerHTML = '<span class="empty-note">No check-ins on this date.</span>';
+      return;
+    }
+
+    const groupDefs = [
+      ...stops.map((s, i) => ({ key: s.id, label: s.name, color: CHART_PALETTE[i % CHART_PALETTE.length] })),
+      { key: 'NOT_COMING', label: 'Not coming', color: NOT_COMING_COLOR }
+    ];
+
+    let html = '';
+    let totalPresent = 0;
+
+    groupDefs.forEach(def => {
+      const ids = Object.keys(histMap).filter(id => getStopId(histMap[id]) === def.key && members.some(m => m.id === id));
+      if (ids.length === 0) return;
+      
+      if (def.key !== 'NOT_COMING') totalPresent += ids.length;
+
+      const chips = ids.map(id => {
+        const m = members.find(x => x.id === id);
+        const statusVal = histMap[id];
+        const timeMs = (typeof statusVal === 'object' && statusVal.time) ? statusVal.time : 0;
+        
+        let timeStr = '';
+        let isLateClass = '';
+        if (timeMs) {
+            const checkInDate = new Date(timeMs);
+            timeStr = checkInDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            const [lateH, lateM] = lateThreshold ? lateThreshold.split(':').map(Number) : [24, 0];
+            const isLate = checkInDate.getHours() > lateH || (checkInDate.getHours() === lateH && checkInDate.getMinutes() >= lateM);
+            isLateClass = isLate ? 'late' : '';
+        }
+
+        return `
+          <span class="name-chip ${isLateClass}" style="padding-right:12px;">
+            ${escapeHtml(m.name)} 
+            ${timeStr ? `<span class="time-stamp">(${timeStr})</span>` : ''}
+          </span>`;
+      }).join('');
+
+      html += `
+        <div class="point-group open" style="margin-top: 14px; animation: none;">
+          <div class="group-header" style="cursor:default;">
+            <span class="group-dot" style="background:${def.color}"></span>
+            <span class="group-title">${escapeHtml(def.label)}</span>
+            <span class="group-count">${ids.length}</span>
+          </div>
+          <div class="group-body" style="display:block; padding-top:10px;">
+            <div class="chip-row">${chips}</div>
+          </div>
+        </div>
+      `;
+    });
+
+    html = `<div style="margin-bottom: 12px; font-weight: 600; font-size: 14.5px; color: var(--ink);">Total Riding: ${totalPresent}</div>` + html;
+
+    list.innerHTML = html;
+  }
+
   // --- LIVE MAP LOGIC (Leaflet + Firebase) ---
   let busMap = null;
   let busMarker = null;
@@ -1150,8 +1272,6 @@ if(isConfigured){
           statusDot.className = 'pulse-dot';
           statusText.innerHTML = `<span class="pulse-dot"></span> Bus is sharing live location`;
 
-          // Only auto-pan to the bus if the viewer is NOT the one driving
-          // (otherwise it fights user panning)
           if (!isSharingLocation) {
              busMap.flyTo(latLng, 15, { animate: true, duration: 1.5 });
           }
